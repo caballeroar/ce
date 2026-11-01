@@ -6,6 +6,12 @@ publish = "dist"
 NODE_VERSION = "22"
 
 [[redirects]]
+from = "/api/roadmap"
+to = "/.netlify/functions/roadmap"
+status = 200
+force = true
+
+[[redirects]]
 from = "/*"
 to = "/index.html"
 status = 200

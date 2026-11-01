@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Activity,
   ArrowLeft,
@@ -16,8 +16,10 @@ import {
   Gauge,
   LayoutDashboard,
   Leaf,
+  LoaderCircle,
   Lightbulb,
   ListFilter,
+  LogOut,
   MoreHorizontal,
   Plus,
   Search,
@@ -27,6 +29,14 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import {
+  emptyRoadmapData,
+  type Indicator,
+  type Path,
+  type Road,
+  type RoadmapData,
+  type Rule,
+} from "./roadmap-data";
 import "./App.css";
 
 type Page =
@@ -41,196 +51,12 @@ type Page =
   | "reports"
   | "settings";
 type Phase = { id: string; name: string; period: string };
-type Road = { id: string; name: string; color: string };
-type Indicator = {
-  id: string;
-  name: string;
-  category: string;
-  current: number;
-  target: number;
-  unit: string;
-  weight: number;
-  confidence: number;
-  note: string;
-};
-type Path = {
-  id: string;
-  name: string;
-  color: string;
-  health: number;
-  description: string;
-  status: "Actief" | "Gepland";
-};
-type Rule = {
-  road: string;
-  indicator: string;
-  operator: string;
-  value: string;
-  recommendation: string;
-  active: boolean;
-};
 
 const phases: Phase[] = [
   { id: "fase1", name: "Optimalisatie & innovatie", period: "2027–2035" },
   { id: "fase2", name: "Opschaling & versnelling", period: "2035–2040" },
   { id: "fase3", name: "Institutionalisering & afbouw", period: "2040–2045" },
   { id: "fase4", name: "Stabilisatie & uitfasering", period: "2045–2050" },
-];
-
-const initialPaths: Path[] = [
-  {
-    id: "bouw",
-    name: "Transitiepad 1",
-    color: "#df4d20",
-    health: 72,
-    description:
-      "Een circulaire gebouwde omgeving met slim materiaalgebruik en toekomstbestendige renovatie.",
-    status: "Actief",
-  },
-  {
-    id: "grondstoffen",
-    name: "Transitiepad 2",
-    color: "#16836d",
-    health: 58,
-    description:
-      "Grondstoffen langer in de stad houden en waardeverlies in ketens voorkomen.",
-    status: "Actief",
-  },
-  {
-    id: "economie",
-    name: "Transitiepad 3",
-    color: "#2860a8",
-    health: 83,
-    description:
-      "Lokale ondernemers en nieuwe circulaire verdienmodellen versterken.",
-    status: "Actief",
-  },
-  {
-    id: "gww",
-    name: "Transitiepad 4",
-    color: "#c48524",
-    health: 65,
-    description:
-      "Publieke ruimte en infrastructuur toekomstbestendig en circulair inrichten.",
-    status: "Gepland",
-  },
-];
-
-const initialRoads: Road[] = [
-  { id: "policy", name: "Beleid", color: "#df4d20" },
-  { id: "budget", name: "Budget", color: "#16836d" },
-  { id: "citizens", name: "Inwoners", color: "#2860a8" },
-];
-
-const initialIndicators: Record<string, Indicator[]> = {
-  "policy-2027": [
-    {
-      id: "pol-1",
-      name: "Politiek draagvlak",
-      category: "Bestuur",
-      current: 67,
-      target: 75,
-      unit: "%",
-      weight: 3,
-      confidence: 92,
-      note: "Coalitieakkoord ondertekend.",
-    },
-  ],
-  "budget-2027": [
-    {
-      id: "bud-1",
-      name: "Beschikbaar budget",
-      category: "Financiën",
-      current: 12,
-      target: 15,
-      unit: "€ mln",
-      weight: 3,
-      confidence: 95,
-      note: "Q1-toewijzing bevestigd.",
-    },
-  ],
-  "citizens-2027": [
-    {
-      id: "cit-1",
-      name: "Aangemelde woningen",
-      category: "Adoptie",
-      current: 3200,
-      target: 5000,
-      unit: "woningen",
-      weight: 2,
-      confidence: 87,
-      note: "Campagne actief in wijken 4 en 7.",
-    },
-  ],
-  "policy-2028": [
-    {
-      id: "pol-2",
-      name: "Wettelijk kader",
-      category: "Bestuur",
-      current: 45,
-      target: 80,
-      unit: "%",
-      weight: 3,
-      confidence: 78,
-      note: "Concept in commissie.",
-    },
-  ],
-  "budget-2028": [
-    {
-      id: "bud-2",
-      name: "Toegekend kapitaal",
-      category: "Financiën",
-      current: 8,
-      target: 12,
-      unit: "€ mln",
-      weight: 3,
-      confidence: 82,
-      note: "Fase 2 vraagt om raadsbesluit.",
-    },
-  ],
-  "citizens-2028": [
-    {
-      id: "cit-2",
-      name: "Publieke tevredenheid",
-      category: "Betrokkenheid",
-      current: 72,
-      target: 80,
-      unit: "%",
-      weight: 2,
-      confidence: 89,
-      note: "Enquête onder 1.200 huishoudens.",
-    },
-  ],
-};
-
-const initialRules: Rule[] = [
-  {
-    road: "Beleid",
-    indicator: "Politiek draagvlak",
-    operator: "daalt onder",
-    value: "60%",
-    recommendation:
-      "Versterk de betrokkenheid van belanghebbenden voordat aanvullende financiering wordt goedgekeurd.",
-    active: false,
-  },
-  {
-    road: "Budget",
-    indicator: "Beschikbaar budget",
-    operator: "daalt onder",
-    value: "80% van doel",
-    recommendation:
-      "Controleer de EU-subsidieaanvraag en versnel de Q2-toewijzing.",
-    active: true,
-  },
-  {
-    road: "Inwoners",
-    indicator: "Aangemelde woningen",
-    operator: "daalt onder",
-    value: "4.000 woningen",
-    recommendation:
-      "Start een gerichte aanmeldcampagne in wijken die achterblijven.",
-    active: true,
-  },
 ];
 
 const tabs = [
@@ -294,15 +120,6 @@ const phaseQuestions = [
   ],
 ];
 
-function saved<T>(key: string, fallback: T): T {
-  try {
-    const value = localStorage.getItem(key);
-    return value ? (JSON.parse(value) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 function healthOf(items: Indicator[]) {
   if (!items.length) return null;
   const totals = items.reduce(
@@ -327,12 +144,20 @@ function formatValue(value: number, unit: string) {
     : `${value.toLocaleString("nl-NL")} ${unit}`;
 }
 
-function App() {
-  const [page, setPage] = useState<Page>("paths");
-  const [paths, setPaths] = useState<Path[]>(() =>
-    saved("ce-paths", initialPaths),
-  );
-  const [selectedPathId, setSelectedPathId] = useState("bouw");
+function App({
+  userEmail,
+  onLogout,
+}: {
+  userEmail: string;
+  onLogout: () => Promise<void>;
+}) {
+  const [page, setPage] = useState<Page>("dashboard");
+  const [roadmapData, setRoadmapData] = useState<RoadmapData | null>(null);
+  const roadmapDataRef = useRef<RoadmapData | null>(null);
+  const saveQueue = useRef(Promise.resolve());
+  const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [selectedPathId, setSelectedPathId] = useState("");
   const [selectedPhase, setSelectedPhase] = useState("fase1");
   const [activeTab, setActiveTab] = useState(0);
   const [pathMenuOpen, setPathMenuOpen] = useState(true);
@@ -345,12 +170,6 @@ function App() {
   const [panelTab, setPanelTab] = useState<
     "indicatoren" | "regels" | "inzichten"
   >("indicatoren");
-  const [indicators, setIndicators] = useState<Record<string, Indicator[]>>(
-    () => saved("ce-indicators", initialIndicators),
-  );
-  const [rules] = useState<Rule[]>(() => saved("ce-rules", initialRules));
-  const [roads, setRoads] = useState<Road[]>(initialRoads);
-  const [years, setYears] = useState([2027, 2028, 2029]);
   const [newIndicatorOpen, setNewIndicatorOpen] = useState(false);
   const [indicatorName, setIndicatorName] = useState("");
   const [indicatorCurrent, setIndicatorCurrent] = useState("");
@@ -360,19 +179,75 @@ function App() {
   const [selectedDocument, setSelectedDocument] = useState(0);
   const [toast, setToast] = useState("");
 
+  const { paths, indicators, rules, roads, years } =
+    roadmapData ?? emptyRoadmapData;
   const selectedPath =
-    paths.find((path) => path.id === selectedPathId) ?? paths[0];
+    paths.find((path) => path.id === selectedPathId);
   const phase = phases.find((item) => item.id === selectedPhase) ?? phases[0];
 
   useEffect(() => {
-    localStorage.setItem("ce-paths", JSON.stringify(paths));
-  }, [paths]);
-  useEffect(() => {
-    localStorage.setItem("ce-indicators", JSON.stringify(indicators));
-  }, [indicators]);
-  useEffect(() => {
-    localStorage.setItem("ce-rules", JSON.stringify(rules));
-  }, [rules]);
+    let active = true;
+    async function loadRoadmap() {
+      try {
+        localStorage.removeItem("ce-paths");
+        localStorage.removeItem("ce-indicators");
+        localStorage.removeItem("ce-rules");
+        const response = await fetch("/api/roadmap", {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+        if (!response.ok) {
+          throw new Error(`Laden mislukt (HTTP ${response.status}).`);
+        }
+        const data = (await response.json()) as RoadmapData;
+        if (!active) return;
+        roadmapDataRef.current = data;
+        setRoadmapData(data);
+      } catch (error) {
+        if (!active) return;
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "De roadmap kon niet worden geladen.",
+        );
+      }
+    }
+
+    void loadRoadmap();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function updateRoadmap(update: (current: RoadmapData) => RoadmapData) {
+    const current = roadmapDataRef.current;
+    if (!current) return;
+
+    const next = update(current);
+    roadmapDataRef.current = next;
+    setRoadmapData(next);
+    saveQueue.current = saveQueue.current
+      .then(async () => {
+        const response = await fetch("/api/roadmap", {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(next),
+        });
+        if (!response.ok) {
+          throw new Error(`Opslaan mislukt (HTTP ${response.status}).`);
+        }
+        setSaveError("");
+      })
+      .catch((error: unknown) => {
+        setSaveError(
+          error instanceof Error
+            ? error.message
+            : "De wijzigingen konden niet worden opgeslagen.",
+        );
+      });
+  }
+
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(""), 2600);
@@ -398,7 +273,10 @@ function App() {
       description: "Een nieuw transitiepad voor de circulaire stad.",
       status: "Gepland",
     };
-    setPaths((current) => [...current, path]);
+    updateRoadmap((current) => ({
+      ...current,
+      paths: [...current.paths, path],
+    }));
     setNewPathName("");
     setAddPathOpen(false);
     openPath(id);
@@ -425,9 +303,12 @@ function App() {
       confidence: 90,
       note: "Handmatig toegevoegd.",
     };
-    setIndicators((current) => ({
+    updateRoadmap((current) => ({
       ...current,
-      [key]: [...(current[key] ?? []), item],
+      indicators: {
+        ...current.indicators,
+        [key]: [...(current.indicators[key] ?? []), item],
+      },
     }));
     setIndicatorName("");
     setIndicatorCurrent("");
@@ -439,8 +320,31 @@ function App() {
   const goTo = (next: Page) => {
     setPage(next);
     setSelectedGate(null);
-    if (next !== "path-detail") setSelectedPathId("bouw");
+    if (next !== "path-detail") setSelectedPathId("");
   };
+
+  if (loadError) {
+    return (
+      <main className="data-state-page">
+        <p>{loadError}</p>
+        <button
+          className="button button-primary"
+          onClick={() => window.location.reload()}
+        >
+          Opnieuw proberen
+        </button>
+      </main>
+    );
+  }
+
+  if (!roadmapData) {
+    return (
+      <main className="data-state-page" aria-busy="true">
+        <LoaderCircle size={20} className="auth-spinner" />
+        <span>Beveiligde roadmap laden...</span>
+      </main>
+    );
+  }
 
   return (
     <div className="app-shell">
@@ -453,10 +357,17 @@ function App() {
         pathMenuOpen={pathMenuOpen}
         setPathMenuOpen={setPathMenuOpen}
         onAddPath={() => setAddPathOpen(true)}
+        userEmail={userEmail}
+        onLogout={onLogout}
       />
       <main
         className={`workspace ${selectedGate && page === "roadmap" ? "workspace-panel-open" : ""}`}
       >
+        {saveError && (
+          <div className="save-error" role="alert">
+            {saveError} Deze wijziging is nog niet op de server opgeslagen.
+          </div>
+        )}
         {page === "paths" && (
           <PathsOverview
             paths={paths}
@@ -467,7 +378,7 @@ function App() {
             }}
           />
         )}
-        {page === "path-detail" && (
+        {page === "path-detail" && selectedPath && (
           <PathDetail
             path={selectedPath}
             phase={phase}
@@ -481,6 +392,7 @@ function App() {
         {page === "dashboard" && (
           <Dashboard
             paths={paths}
+            rules={rules}
             onOpenPath={openPath}
             onOpenRoadmap={() => setPage("roadmap")}
           />
@@ -495,12 +407,20 @@ function App() {
               setPanelTab("indicatoren");
             }}
             onAddRoad={(name) =>
-              setRoads((items) => [
-                ...items,
-                { id: `road-${Date.now()}`, name, color: "#2860a8" },
-              ])
+              updateRoadmap((current) => ({
+                ...current,
+                roads: [
+                  ...current.roads,
+                  { id: `road-${Date.now()}`, name, color: "#2860a8" },
+                ],
+              }))
             }
-            onAddYear={(year) => setYears((items) => [...items, year].sort())}
+            onAddYear={(year) =>
+              updateRoadmap((current) => ({
+                ...current,
+                years: [...current.years, year].sort(),
+              }))
+            }
           />
         )}
         {page === "assets" && (
@@ -605,6 +525,8 @@ function Sidebar({
   pathMenuOpen,
   setPathMenuOpen,
   onAddPath,
+  userEmail,
+  onLogout,
 }: {
   page: Page;
   goTo: (page: Page) => void;
@@ -614,6 +536,8 @@ function Sidebar({
   pathMenuOpen: boolean;
   setPathMenuOpen: (open: boolean) => void;
   onAddPath: () => void;
+  userEmail: string;
+  onLogout: () => Promise<void>;
 }) {
   const primary = [
     { id: "dashboard" as Page, label: "Dashboard", icon: LayoutDashboard },
@@ -631,7 +555,7 @@ function Sidebar({
     <aside className="sidebar">
       <button
         className="brand"
-        onClick={() => goTo("paths")}
+        onClick={() => goTo("dashboard")}
         aria-label="Ga naar startpagina"
       >
         <span className="brand-mark">
@@ -707,11 +631,21 @@ function Sidebar({
         />
         <div className="profile">
           <span className="avatar">DH</span>
-          <span>
+          <span className="profile-copy">
             <strong>Gemeente Den Haag</strong>
-            <small>Beheerteam</small>
+            <small>{userEmail}</small>
           </span>
-          <MoreHorizontal size={16} />
+          <button
+            className="profile-logout"
+            type="button"
+            aria-label="Uitloggen"
+            title="Uitloggen"
+            onClick={() => {
+              void onLogout();
+            }}
+          >
+            <LogOut size={15} />
+          </button>
         </div>
       </div>
     </aside>
@@ -796,7 +730,8 @@ function PathsOverview({
         </p>
         <button
           className="button button-light"
-          onClick={() => onOpenPath(paths[0].id)}
+          disabled={!paths.length}
+          onClick={() => paths[0] && onOpenPath(paths[0].id)}
         >
           Bekijk de routekaart <ArrowRight size={15} />
         </button>
@@ -807,16 +742,22 @@ function PathsOverview({
       <div className="section-topline">
         <div>
           <span className="eyebrow">De route naar 2050</span>
-          <h2>Vier transitiepaden</h2>
+          <h2>Transitiepaden</h2>
         </div>
         <button
           className="button button-quiet"
-          onClick={() => onOpenPath(paths[0].id)}
+          disabled={!paths.length}
+          onClick={() => paths[0] && onOpenPath(paths[0].id)}
         >
           Alle paden <ArrowRight size={15} />
         </button>
       </div>
       <div className="path-card-grid">
+        {!paths.length && (
+          <p className="dashboard-empty">
+            Er zijn nog geen transitiepaden toegevoegd.
+          </p>
+        )}
         {paths.map((path, index) => (
           <button
             className="path-card"
@@ -1204,13 +1145,22 @@ function PathDetail({
 
 function Dashboard({
   paths,
+  rules,
   onOpenPath,
   onOpenRoadmap,
 }: {
   paths: Path[];
+  rules: Rule[];
   onOpenPath: (id: string) => void;
   onOpenRoadmap: () => void;
 }) {
+  const activeRules = rules.filter((rule) => rule.active);
+  const averageProgress = paths.length
+    ? Math.round(
+        paths.reduce((total, path) => total + path.health, 0) / paths.length,
+      )
+    : null;
+
   return (
     <div className="page-content dashboard-page">
       <PageHeading
@@ -1227,28 +1177,28 @@ function Dashboard({
         <Metric
           label="Transitiepaden"
           value={`${paths.length}`}
-          note="4 actief in de routekaart"
+          note={`${paths.filter((path) => path.status === "Actief").length} actief`}
           icon={<Leaf size={17} />}
           tone="orange"
         />
         <Metric
           label="Gemiddelde voortgang"
-          value="69%"
-          note="+4% ten opzichte van Q1"
+          value={averageProgress === null ? "–" : `${averageProgress}%`}
+          note={averageProgress === null ? "Nog geen gegevens" : "Over alle paden"}
           icon={<ArrowUpRight size={17} />}
           tone="green"
         />
         <Metric
           label="Mijlpalen dit jaar"
-          value="12 / 18"
-          note="6 mijlpalen in uitvoering"
+          value="–"
+          note="Nog geen gegevens"
           icon={<Check size={17} />}
           tone="blue"
         />
         <Metric
           label="Aandacht nodig"
-          value="3"
-          note="Verspreid over 2 transitiepaden"
+          value={`${activeRules.length}`}
+          note="Actieve signaleringsregels"
           icon={<ShieldAlert size={17} />}
           tone="red"
         />
@@ -1262,7 +1212,8 @@ function Dashboard({
             </div>
             <button
               className="text-action"
-              onClick={() => onOpenPath(paths[0].id)}
+              disabled={!paths.length}
+              onClick={() => paths[0] && onOpenPath(paths[0].id)}
             >
               Bekijk routekaart <ArrowRight size={14} />
             </button>
@@ -1287,6 +1238,11 @@ function Dashboard({
               <ChevronRight size={15} />
             </button>
           ))}
+          {!paths.length && (
+            <p className="dashboard-empty">
+              Er zijn nog geen transitiepaden toegevoegd.
+            </p>
+          )}
         </section>
         <section className="content-panel alert-panel">
           <div className="panel-heading">
@@ -1294,38 +1250,25 @@ function Dashboard({
               <span className="eyebrow">VROEGSIGNALEN</span>
               <h3>Aandachtspunten</h3>
             </div>
-            <span className="count-badge count-warn">3</span>
+            <span className="count-badge count-warn">{activeRules.length}</span>
           </div>
-          <div className="alert-row">
-            <span className="alert-symbol warning">
-              <ShieldAlert size={15} />
-            </span>
-            <div>
-              <strong>Budget blijft achter op doel</strong>
-              <p>Gate 2027 · Beschikbaar budget op 80% van doelwaarde.</p>
+          {activeRules.map((rule) => (
+            <div className="alert-row" key={`${rule.road}-${rule.indicator}`}>
+              <span className="alert-symbol warning">
+                <ShieldAlert size={15} />
+              </span>
+              <div>
+                <strong>{rule.indicator}</strong>
+                <p>{rule.road} · {rule.recommendation}</p>
+              </div>
+              <ArrowRight size={14} />
             </div>
-            <ArrowRight size={14} />
-          </div>
-          <div className="alert-row">
-            <span className="alert-symbol insight">
-              <Lightbulb size={15} />
-            </span>
-            <div>
-              <strong>Woningregistratie vraagt versnelling</strong>
-              <p>Gerichte campagne aanbevolen voor wijken 4 en 7.</p>
-            </div>
-            <ArrowRight size={14} />
-          </div>
-          <div className="alert-row">
-            <span className="alert-symbol progress">
-              <Activity size={15} />
-            </span>
-            <div>
-              <strong>Renovatieteams op schema</strong>
-              <p>45.000 renovaties als tussenmijlpaal voor 2030.</p>
-            </div>
-            <ArrowRight size={14} />
-          </div>
+          ))}
+          {!activeRules.length && (
+            <p className="dashboard-empty">
+              Er zijn nog geen actieve signaleringsregels.
+            </p>
+          )}
         </section>
       </div>
       <section className="content-panel activity-panel">
@@ -1338,44 +1281,9 @@ function Dashboard({
             <MoreHorizontal size={18} />
           </button>
         </div>
-        {[
-          [
-            "10:42",
-            "Politiek draagvlak bijgewerkt",
-            "Indicator · Beleid Gate 2027",
-            "update",
-          ],
-          [
-            "Gisteren",
-            "Budget-road herberekend",
-            "Automatische analyse · Gate 2027",
-            "auto",
-          ],
-          [
-            "21 okt",
-            "Nieuwe aanbeveling gegenereerd",
-            "Inwoners · Registratiecampagne",
-            "insight",
-          ],
-        ].map(([time, title, detail, type]) => (
-          <div className="activity-row" key={title}>
-            <span className="activity-time">{time}</span>
-            <span className={`activity-icon activity-${type}`}>
-              {type === "insight" ? (
-                <Sparkles size={14} />
-              ) : type === "auto" ? (
-                <Activity size={14} />
-              ) : (
-                <Check size={14} />
-              )}
-            </span>
-            <span className="activity-copy">
-              <strong>{title}</strong>
-              <small>{detail}</small>
-            </span>
-            <span className="activity-user">DH</span>
-          </div>
-        ))}
+        <p className="dashboard-empty">
+          Er is nog geen recente activiteit.
+        </p>
       </section>
     </div>
   );
@@ -1473,14 +1381,18 @@ function Roadmap({
                 <span className="path-dot" style={{ background: road.color }} />
                 <strong>{road.name}</strong>
                 <small>
-                  {Math.round(
-                    years.reduce(
-                      (sum, item) =>
-                        sum +
-                        (healthOf(indicators[`${road.id}-${item}`] ?? []) ?? 0),
-                      0,
-                    ) / years.length,
-                  )}
+                  {years.length
+                    ? Math.round(
+                        years.reduce(
+                          (sum, item) =>
+                            sum +
+                            (healthOf(
+                              indicators[`${road.id}-${item}`] ?? [],
+                            ) ?? 0),
+                          0,
+                        ) / years.length,
+                      )
+                    : 0}
                   % gemiddelde gezondheid
                 </small>
               </div>

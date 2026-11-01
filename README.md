@@ -26,7 +26,31 @@ The included `netlify.toml` configures the production build (`npm run build`), p
 2. In Netlify, choose **Add new site** → **Import an existing project** and connect the GitHub repository.
 3. Keep the detected build settings and deploy.
 
-Path, indicator, and rule data are currently stored in the visitor's browser using local storage. No server-side database is configured.
+## Enable Netlify Identity
+
+The app uses Netlify Identity for sign-in. In the Netlify dashboard for
+[`cedh.netlify.app`](https://app.netlify.com/sites/cedh/identity), enable
+Identity, set registration to **Invite only**, and invite:
+
+- `amelrc@gmail.com`
+- `jay@justcommonpeople.com`
+
+The app checks the same two addresses in both the client and the
+`/.netlify/functions/roadmap` server endpoint. The server verifies the
+Netlify Identity session before reading or writing shared roadmap records in
+Netlify Blobs. Roadmap paths, indicators, rules, workstreams, and years are not
+embedded in the app bundle or kept in browser local storage. Old `ce-*`
+local-storage entries are removed when the authenticated app loads.
+
+The server store starts empty; add the real roadmap data after deployment.
+The shared store is a single document, so avoid simultaneous edits: the last
+save replaces the shared document. Use Netlify Dev for local development so
+the Identity, Functions, and Blobs services are available.
+
+The static app code is still publicly downloadable. Confidential roadmap
+records are protected by the server-side email allowlist; do not put secrets
+or private records in source code or static assets.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.

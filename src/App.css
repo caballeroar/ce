@@ -251,9 +251,6 @@ button:disabled {
   color: var(--muted);
   font-size: 10px;
 }
-.profile > svg {
-  color: #99978e;
-}
 .avatar {
   display: grid;
   width: 27px;
@@ -282,6 +279,34 @@ button:disabled {
 }
 .workspace-panel-open {
   margin-right: 426px;
+}
+.data-state-page {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  background: var(--canvas);
+  color: var(--muted);
+  font-size: 13px;
+}
+.save-error {
+  position: sticky;
+  z-index: 15;
+  top: 0;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0c9bd;
+  background: #fff5f1;
+  color: var(--orange-dark);
+  font-size: 11px;
+}
+.dashboard-empty {
+  margin: 0;
+  padding: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
 }
 .page-content {
   width: min(100%, 1450px);
@@ -1491,6 +1516,34 @@ button:disabled {
 .roadmap-row {
   min-height: 100px;
   border-top: 1px solid var(--line);
+}
+.profile-copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 3px;
+}
+.profile-copy strong,
+.profile-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-logout {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.profile-logout:hover {
+  background: #f7f5f1;
+  color: var(--orange-dark);
 }
 .road-label {
   display: flex;
