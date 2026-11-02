@@ -10,13 +10,10 @@ import {
   updateUser,
   type User,
 } from "@netlify/identity";
-import { LoaderCircle, Sparkles } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import "./AuthGate.css";
 
-const allowedEmails = new Set([
-  "amelrc@gmail.com",
-  "jay@justcommonpeople.com",
-]);
+const allowedEmails = new Set(["amelrc@gmail.com", "jay@justcommonpeople.com"]);
 
 type AuthMode = "login" | "invite" | "forgot" | "recovery";
 type AuthState = "checking" | "signed-out" | "authenticated" | "denied";
@@ -33,7 +30,9 @@ function getAuthCallback() {
 }
 
 function isAllowed(user: User) {
-  return Boolean(user.email && allowedEmails.has(user.email.trim().toLowerCase()));
+  return Boolean(
+    user.email && allowedEmails.has(user.email.trim().toLowerCase()),
+  );
 }
 
 function errorMessage(error: unknown) {
@@ -135,7 +134,9 @@ export default function AuthGate({ children }: AuthGateProps) {
         await updateUser({ password });
         const currentUser = await getUser();
         if (!currentUser) {
-          throw new Error("Je sessie is verlopen. Vraag een nieuwe herstellink aan.");
+          throw new Error(
+            "Je sessie is verlopen. Vraag een nieuwe herstellink aan.",
+          );
         }
         if (!isAllowed(currentUser)) {
           await logout();
@@ -202,7 +203,6 @@ export default function AuthGate({ children }: AuthGateProps) {
 
   return (
     <main className="auth-page">
-      <div className="auth-cityscape" aria-hidden="true" />
       <section className="auth-card" aria-labelledby="auth-title">
         <header className="auth-heading">
           <h1 id="auth-title">Transitie Roadmap</h1>
@@ -228,7 +228,9 @@ export default function AuthGate({ children }: AuthGateProps) {
             <label>
               <span>{mode === "login" ? "Password" : "Nieuw wachtwoord"}</span>
               <input
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
                 autoFocus={mode !== "login"}
                 minLength={8}
                 type="password"
@@ -286,12 +288,17 @@ export default function AuthGate({ children }: AuthGateProps) {
           </p>
         )}
       </section>
-      <div className="auth-partner" aria-label="Powered by Just Common People">
+      {/* <div className="auth-partner" aria-label="Powered by Just Common People">
         <span>Powered by</span>
         <strong>
-          just common people <Sparkles size={20} aria-hidden="true" />
+          <img
+            src="/images/OFFICIAL_LOGO.png"
+            alt="Just Common People"
+            width="133"
+            height="30"
+          />
         </strong>
-      </div>
+      </div> */}
     </main>
   );
 }

@@ -7,7 +7,6 @@ import {
   LogOut,
   Plus,
   Route,
-  Sparkles,
   X,
 } from "lucide-react";
 import type { CSSProperties } from "react";
@@ -122,18 +121,21 @@ const topicContent = [
   },
 ];
 
-function parseRoute(hash: string): AppRoute {
-  const match = hash.match(
-    /^#\/transitiepad\/(\d+)\/fase\/(\d+)(?:\/onderwerp\/(\d+))?$/,
-  );
-  if (!match) {
+function parseRoute(hash: string): AppRoute | null {
+  if (hash === "" || hash === "#/" || hash === "#/dashboard") {
     return { view: "dashboard", trajectory: 0, phase: 0, topic: 0 };
   }
+
+  const match = hash.match(
+    /^#\/transitiepad\/([1-4])\/fase\/([1-4])(?:\/onderwerp\/([1-8]))?$/,
+  );
+  if (!match) return null;
+
   return {
     view: "trajectory",
-    trajectory: Math.min(3, Math.max(0, Number(match[1]) - 1)),
-    phase: Math.min(3, Math.max(0, Number(match[2]) - 1)),
-    topic: Math.min(7, Math.max(0, Number(match[3] ?? 1) - 1)),
+    trajectory: Number(match[1]) - 1,
+    phase: Number(match[2]) - 1,
+    topic: Number(match[3] ?? 1) - 1,
   };
 }
 
@@ -166,7 +168,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <div className="brand">
       <span className="brand-icon" aria-hidden="true">
-        <Sparkles size={20} strokeWidth={1.7} />
+        <img src="/images/logo_app.png" alt="" width="17" height="18" />
       </span>
       {!compact && (
         <span className="brand-copy">
@@ -188,15 +190,14 @@ function SideNav({
   onLogout,
 }: {
   route: AppRoute;
-  collapsed: boolean;
+  collapsed: boolean | null;
   onToggle: () => void;
   navigate: (route: AppRoute) => void;
   mobileOpen: boolean;
   closeMobile: () => void;
   onLogout: () => Promise<void>;
 }) {
-  const isCompact =
-    !mobileOpen && (route.view === "trajectory" || collapsed);
+  const isCompact = !mobileOpen && (collapsed ?? route.view === "trajectory");
 
   function goTo(next: AppRoute) {
     navigate(next);
@@ -215,6 +216,17 @@ function SideNav({
         className={`primary-nav ${isCompact ? "compact" : ""} ${
           mobileOpen ? "mobile-open" : ""
         }`}
+        onClick={(event) => {
+          if (!(event.target instanceof Element)) return;
+          if (
+            event.target.closest(
+              "button, a, input, select, [role='button'], .brand, .nav-label",
+            )
+          ) {
+            return;
+          }
+          onToggle();
+        }}
       >
         <div className="nav-brand-row">
           <Logo compact={isCompact} />
@@ -279,14 +291,6 @@ function SideNav({
         </nav>
         <div className="nav-footer">
           <button
-            className="collapse-control"
-            onClick={onToggle}
-            aria-label={collapsed ? "Menu uitklappen" : "Menu inklappen"}
-          >
-            <span>{collapsed ? "→" : "←"}</span>
-            {!collapsed && "Menu inklappen"}
-          </button>
-          <button
             className="logout-control"
             type="button"
             onClick={() => void onLogout()}
@@ -294,6 +298,7 @@ function SideNav({
             title="Uitloggen"
           >
             <LogOut size={15} aria-hidden="true" />
+            {!isCompact && <span>Uitloggen</span>}
           </button>
         </div>
       </aside>
@@ -348,8 +353,10 @@ function AppShell({
   onLogout: () => Promise<void>;
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const toggleCollapsed = () =>
+    setCollapsed((value) => !(value ?? route.view === "trajectory"));
 
   return (
     <div className="app-shell">
@@ -365,15 +372,11 @@ function AppShell({
           <span />
         </button>
       </header>
-      <div
-        className={`sidebar-cluster ${
-          route.view === "trajectory" ? "has-topics" : ""
-        }`}
-      >
+      <div className="sidebar-cluster">
         <SideNav
           route={route}
           collapsed={collapsed}
-          onToggle={() => setCollapsed((value) => !value)}
+          onToggle={toggleCollapsed}
           navigate={navigate}
           mobileOpen={mobileOpen}
           closeMobile={() => setMobileOpen(false)}
@@ -633,13 +636,24 @@ function TrajectoryPage({
   );
 }
 
+function RouteNotFound() {
+  return (
+    <main className="route-not-found">
+      <p>404</p>
+      <h1>Pagina niet gevonden</h1>
+      <p>Deze pagina bestaat niet of is niet beschikbaar.</p>
+      <a href="#/dashboard">Terug naar het dashboard</a>
+    </main>
+  );
+}
+
 export default function App({
   onLogout,
 }: {
   userEmail: string;
   onLogout: () => Promise<void>;
 }) {
-  const [route, setRoute] = useState<AppRoute>(() =>
+  const [route, setRoute] = useState<AppRoute | null>(() =>
     parseRoute(window.location.hash),
   );
 
@@ -658,6 +672,8 @@ export default function App({
     else window.location.hash = hash;
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  if (!route) return <RouteNotFound />;
 
   return (
     <AppShell route={route} navigate={navigate} onLogout={onLogout}>
