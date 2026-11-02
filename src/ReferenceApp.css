@@ -132,6 +132,10 @@
   font-weight: 400;
 }
 
+.primary-nav .nav-item {
+  font-size: 12px;
+}
+
 .nav-item:hover {
   background: #f9fafb;
 }
@@ -151,6 +155,11 @@
 
 .chevron {
   margin-left: auto;
+  transition: transform 160ms ease;
+}
+
+.chevron.collapsed {
+  transform: rotate(-90deg);
 }
 
 .trajectory-link {
@@ -219,7 +228,7 @@
   margin: 8px;
 }
 
-.logout-control {
+.primary-nav .logout-control {
   display: flex;
   width: 100%;
   min-height: 34px;
@@ -232,7 +241,7 @@
   border-radius: 8px;
   background: #fff;
   color: #6b7280;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1;
 }

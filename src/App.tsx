@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
   LayoutDashboard,
   Lightbulb,
   LogOut,
@@ -198,6 +199,7 @@ function SideNav({
   onLogout: () => Promise<void>;
 }) {
   const isCompact = !mobileOpen && (collapsed ?? route.view === "trajectory");
+  const [trajectoriesExpanded, setTrajectoriesExpanded] = useState(true);
 
   function goTo(next: AppRoute) {
     navigate(next);
@@ -250,43 +252,59 @@ function SideNav({
             {!isCompact && <span>Dashboard</span>}
           </button>
           <div className="nav-group">
-            <div className="nav-item nav-label" title="Transitiepaden">
+            <button
+              className="nav-item nav-label"
+              type="button"
+              title="Transitiepaden"
+              aria-label="Transitiepaden"
+              aria-expanded={trajectoriesExpanded}
+              aria-controls="trajectory-nav-items"
+              onClick={() =>
+                setTrajectoriesExpanded((expanded) => !expanded)
+              }
+            >
               <Route size={16} aria-hidden="true" />
               {!isCompact && (
                 <>
                   <span>Transitiepaden</span>
-                  <span className="chevron" aria-hidden="true">
-                    ⌄
-                  </span>
+                  <ChevronDown
+                    className={`chevron ${trajectoriesExpanded ? "" : "collapsed"}`}
+                    size={16}
+                    aria-hidden="true"
+                  />
                 </>
               )}
-            </div>
-            {trajectories.map((item, index) => (
-              <button
-                key={item.name}
-                className={`nav-item trajectory-link ${
-                  route.view === "trajectory" && route.trajectory === index
-                    ? "active"
-                    : ""
-                }`}
-                onClick={() =>
-                  goTo({
-                    view: "trajectory",
-                    trajectory: index,
-                    phase: 0,
-                    topic: 0,
-                  })
-                }
-                title={item.name}
-              >
-                <Mark index={index} />
-                {!isCompact && <span>{item.name}</span>}
-              </button>
-            ))}
-            <button className="nav-item muted" type="button" title="Pad toevoegen">
-              <Plus size={16} aria-hidden="true" />
-              {!isCompact && <span>Pad toevoegen</span>}
             </button>
+            {trajectoriesExpanded && (
+              <div id="trajectory-nav-items">
+                {trajectories.map((item, index) => (
+                  <button
+                    key={item.name}
+                    className={`nav-item trajectory-link ${
+                      route.view === "trajectory" && route.trajectory === index
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      goTo({
+                        view: "trajectory",
+                        trajectory: index,
+                        phase: 0,
+                        topic: 0,
+                      })
+                    }
+                    title={item.name}
+                  >
+                    <Mark index={index} />
+                    {!isCompact && <span>{item.name}</span>}
+                  </button>
+                ))}
+                <button className="nav-item muted" type="button" title="Pad toevoegen">
+                  <Plus size={16} aria-hidden="true" />
+                  {!isCompact && <span>Pad toevoegen</span>}
+                </button>
+              </div>
+            )}
           </div>
         </nav>
         <div className="nav-footer">
